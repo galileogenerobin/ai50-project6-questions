@@ -1,6 +1,8 @@
 import nltk
 import sys
 import string
+import math
+import os
 
 FILE_MATCHES = 1
 SENTENCE_MATCHES = 1
@@ -54,7 +56,12 @@ def load_files(directory):
     files = dict()
 
     # Access the directory and, for each file, update them to the dictionary as {filename: content} key-value pair
-    # TODO
+    # List of files
+    file_list = os.listdir(directory)
+    # For each file, read contents into a string and add to the dictionary
+    for file_name in file_list:
+        with open(os.path.join(directory, file_name)) as file:
+            files[file_name] = file.read()
 
     # return the dictionary
     return files
@@ -70,7 +77,7 @@ def tokenize(document):
     punctuation or English stopwords.
     """
     # Download the nltk stopwords resource
-    nltk.download("stopwords")
+    # nltk.download("stopwords")
 
     # Remove all punctuation marks from the text (from string.punctuation)
     # ord() returns the integer value of a unicode character, which we use to search the input string
@@ -92,7 +99,26 @@ def compute_idfs(documents):
     Any word that appears in at least one of the documents should be in the
     resulting dictionary.
     """
-    raise NotImplementedError
+    idf_values = dict()
+
+    # Count the number of documents (for use in the idf computation)
+    total_documents = len(documents)
+
+    # Create a list of all unique words from the documents by creating a set (which removes duplicate values) from each document's word list
+    word_list = set()
+    for document in documents:
+        word_list.update(documents[document])
+
+    # Compute idf for each word; idf is computed as the natural logarithm of the total number of documents / number of documents containing the word
+    for word in word_list:
+        # Count the number of documents that contain the word
+        docs_with_word = len([document for document in documents if word in documents[document]])
+        # Compute the idf and add to the output dictionary
+        idf = math.log(total_documents / docs_with_word)
+        idf_values[word] = idf
+
+    return idf_values
+    # raise NotImplementedError
 
 
 def top_files(query, files, idfs, n):
