@@ -84,10 +84,8 @@ def tokenize(document):
     document = document.translate({ord(punct): None for punct in string.punctuation})
 
     # Splice the string into a list of lower case words (delimited by spaces)
-    words = [word.lower() for word in document.split() if word.lower() not in nltk.corpus.stopwords.words("english")]
-    
-    # Return the list of words
-    return words
+    # And return the list of words
+    return [word.lower() for word in document.split() if word.lower() not in nltk.corpus.stopwords.words("english")]
     # raise NotImplementedError
 
 
@@ -128,7 +126,28 @@ def top_files(query, files, idfs, n):
     to their IDF values), return a list of the filenames of the the `n` top
     files that match the query, ranked according to tf-idf.
     """
-    raise NotImplementedError
+    file_idfs = dict()
+
+    # For each file, compute the sum of tf-idfs for each word in the query
+    for file in files.keys():
+        # For each word in the query, determine the number of occurrences in the document ("files[file]")
+        # And multiply by the idf value ("idfs[word]"), this is the word's tf-idf score
+        # Sum all these values for the file
+        tf_idf_sum = sum([files[file].count(word) * idfs[word] for word in query])
+        # Map the tf idf sum to the filename (so we can sort them later)
+        file_idfs[file] = tf_idf_sum
+
+    # Sort the files by tf_idf_sum and get the top n files
+    # The lambda function used here can be read as -> given a variable "item", return "item[1]"
+    # Note that the .items() function gives us a list of tuples representing each k-v pair
+    # So passing each item into the lambda function gives us the tf_idf_sum (second item in the tuple),
+    # i.e. we're asking the sorted function to sort by the tf_idf_sum of each tuple
+    # Sorted returns the sorted list of .items() tuples
+    top_files = sorted(file_idfs.items(), key=lambda item: item[1], reverse=True)
+    
+    # Return the filenames for the top n files
+    return [item[0] for item in top_files[:n]]
+    # raise NotImplementedError
 
 
 def top_sentences(query, sentences, idfs, n):
@@ -139,7 +158,25 @@ def top_sentences(query, sentences, idfs, n):
     the query, ranked according to idf. If there are ties, preference should
     be given to sentences that have a higher query term density.
     """
-    raise NotImplementedError
+    sentence_idfs = dict()
+
+    # For each sentence, compute the sum of idfs for each word in the query and the query term density
+    for sentence in sentences.keys():
+        # Sum the IDF values of all words in the query that appears in the sentence ("if word in sentences[sentence]")
+        idf_sum = sum([idfs[word] for word in query if word in sentences[sentence]])
+        # Calculate the "query term density" for the sentence
+        # This is the proportion of words in the sentence that are also words in the query
+        query_term_density = len([word for word in sentences[sentence] if word in query]) / len(sentences[sentence])
+        # Map the idf sum and query_term_density to the filename (so we can sort them later)
+        sentence_idfs[sentence] = (idf_sum, query_term_density)
+
+    # Sort the sentences by idf_sum and query_term_density and get the top n sentences
+    # Here, our sorting key is a tuple, so the sorted function sorts by the first value (in this case, idf_sum) then by the second value
+    top_sentences = sorted(sentence_idfs.items(), key=lambda item: item[1], reverse=True)
+    
+    # Return the top n sentences
+    return [item[0] for item in top_sentences[:n]]
+    # raise NotImplementedError
 
 
 if __name__ == "__main__":
